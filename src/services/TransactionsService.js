@@ -13,7 +13,7 @@ export default {
       });
     return app;
   },
-  async sendMessage() {
+  async sendMessage(message) {
     let app = await firebase
       .auth()
       .currentUser.getIdToken(true)
@@ -21,7 +21,7 @@ export default {
         return Api().post(
           "/feed/new",
           {
-            message: "We have lift off"
+            message
           },
           {
             headers: { Authorization: `${idToken}` }

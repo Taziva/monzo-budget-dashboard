@@ -7,7 +7,8 @@ const admin = require("firebase-admin");
 
 require('dotenv').config()
 
-const database = require("./src/services/Database.js")
+const database = require("./src/services/Database")
+const {formatAmount} = require("./src/services/CurrencyService");
 const serviceAccount = {
   type: process.env.ADMIN_TYPE,
   project_id: process.env.ADMIN_PROJECT_ID,
@@ -65,6 +66,15 @@ app.post('/api/feed/new', async (req, res) => {
         return decodedToken.uid
       })
       const {accessToken, accountId} = await database.getAccountInfo(uid)
+      const { balance, currency } = await request.get({
+        url: "https://api.monzo.com/balance",
+        headers: {
+          Authorization: `Bearer ${accessToken}`
+        },
+        qs: { account_id: accountId },
+        json: true
+      });
+      console.log(formatAmount(balance, currency))
       const formData = {
         type: "basic",
         params: {
@@ -73,7 +83,7 @@ app.post('/api/feed/new', async (req, res) => {
           background_color: "#FCF1EE",
           body_color: "#FCF1EE",
           title_color: "#333",
-          body: req.body.message
+          body: `${req.body.message} ${formatAmount(balance, currency)}`
         }
       };
       let data = await request.post({
@@ -85,8 +95,10 @@ app.post('/api/feed/new', async (req, res) => {
         form: formData,
         json: true
       });
+      res.send("OK")
     } catch (error) {
-      throw error;
+      console.log(error)
+      res.status(422).send(error.message);
     }
 })
 

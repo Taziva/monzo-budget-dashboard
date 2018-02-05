@@ -6,13 +6,13 @@
 
     </p>
     <button v-on:click="sendMessage">Send Balance</button>
-    <div v-if="transactions.length > 0" v-for="transaction in transactions">
+    <div v-if="hasTransactions" v-for="transaction in transactions">
       <p>
         <span>{{ formatCategory(transaction.category) }}</span> -
         <span>{{ transaction.description }}</span> - <span><b>{{ formatAmount(transaction.amount, transaction.currency) }}</b></span>
       </p>
     </div>
-    <div>
+    <div v-if="!hasTransactions">
       <a :href="monzoClient" >
         Monzo
       </a>
@@ -22,11 +22,15 @@
 
 <script>
 import TransactionsService from "@/services/TransactionsService";
+import { formatAmount } from "@/services/CurrencyService";
+
 export default {
   name: "transactions",
   data() {
     return {
+      formatAmount,
       transactions: [],
+      transactionsLoaded: false,
       error: "",
       monzoClient: `https://auth.monzo.com/?client_id=${
         process.env.MONZO_CLIENT
@@ -38,26 +42,23 @@ export default {
   },
   methods: {
     async getTransactions() {
-      console.log(this.$route.name);
       const { data } = await TransactionsService.fetchTransactions();
       if (data.error) {
         this.error = data.error.message;
       }
       this.transactions = data;
+      this.transactionsLoaded = true;
     },
     async sendMessage() {
-      await TransactionsService.sendMessage();
+      await TransactionsService.sendMessage("Your Balance Is:");
     },
     formatCategory(category) {
       return (
         category.charAt(0).toUpperCase() + category.slice(1).replace("_", " ")
       );
     },
-    formatAmount(amount, currency) {
-      return (amount / 100).toLocaleString("en-GB", {
-        style: "currency",
-        currency: currency
-      });
+    hasTransactions() {
+      this.transactionsLoaded && this.transactions.length > 0 ? true : false;
     }
   }
 };

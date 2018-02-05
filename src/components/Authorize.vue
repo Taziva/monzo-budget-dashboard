@@ -3,7 +3,7 @@
     <h1>Authorize</h1>
     This file will list all the transactions.
     <p v-if="typeof error != 'undefined'">{{error}}<br />
-      <a href="https://auth.monzo.com/?client_id=oauthclient_00009Sv14jlo3oKpWer8sr&redirect_uri=http://localhost:8080/authorize&response_type=code">
+      <a :href="monzoClient" >
         Monzo
       </a>
     </p>
@@ -16,7 +16,12 @@ import AccountsService from "@/services/AccountsService";
 export default {
   name: "authorize",
   data() {
-    return { error: "" };
+    return {
+      error: "",
+      monzoClient: `https://auth.monzo.com/?client_id=${
+        process.env.MONZO_CLIENT
+      }&redirect_uri=${process.env.HOST}/authorize&response_type=code`
+    };
   },
   beforeMount() {
     this.getTransactions();

@@ -5,7 +5,8 @@
   "author": "Taziva <stmarovatsanga@gmail.com>",
   "private": true,
   "scripts": {
-    "client": "webpack-dev-server --inline --progress --config build/webpack.dev.conf.js",
+    "client":
+      "webpack-dev-server --inline --progress --config build/webpack.dev.conf.js",
     "start": "node app.js",
     "unit": "jest --config test/unit/jest.conf.js --coverage",
     "e2e": "node test/e2e/runner.js",
@@ -13,7 +14,8 @@
     "server:dev": "nodemon app.js",
     "dev": "npm-run-all -p server:dev client",
     "lint": "eslint --ext .js,.vue src test/unit test/e2e/specs",
-    "build": "node build/build.js"
+    "build": "node build/build.js",
+    "heroku-postbuild": "yarn install --production=false && yarn build"
   },
   "dependencies": {
     "axios": "^0.17.1",
@@ -92,9 +94,5 @@
     "node": ">= 6.0.0",
     "npm": ">= 3.0.0"
   },
-  "browserslist": [
-    "> 1%",
-    "last 2 versions",
-    "not ie <= 8"
-  ]
+  "browserslist": ["> 1%", "last 2 versions", "not ie <= 8"]
 }
