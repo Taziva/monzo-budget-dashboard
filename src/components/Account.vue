@@ -1,5 +1,5 @@
 <template>
-  <div class="transactions">
+  <div class="account">
     <h1>Accounts</h1>
     This file will list all the transactions.
     <p v-if="typeof error != 'undefined'">{{error}}<br />
@@ -25,7 +25,7 @@ import TransactionsService from "@/services/TransactionsService";
 import { formatAmount } from "@/services/CurrencyService";
 
 export default {
-  name: "transactions",
+  name: "account",
   data() {
     return {
       formatAmount,
