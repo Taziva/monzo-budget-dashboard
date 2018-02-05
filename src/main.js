@@ -14,7 +14,6 @@ const config = {
   storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
   messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID
 };
-console.log(process.env.FIREBASE_API_KEY);
 firebase.initializeApp(config);
 
 Vue.config.productionTip = false;
