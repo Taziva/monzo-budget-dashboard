@@ -1,6 +1,6 @@
-const CryptoJS = require("crypto-js");
+import CryptoJS from "crypto-js";
 
-module.exports = {
+export default {
   encryptData: data => {
     var encrypted = CryptoJS.AES.encrypt(data, process.env.CRYPT_KEY);
     return encrypted.toString();

@@ -11,7 +11,7 @@
 </template>
 
 <script>
-import AccountsService from "@/services/AccountsService";
+import { authorizeUser } from "@/services/AccountsService";
 
 export default {
   name: "authorize",
@@ -29,9 +29,7 @@ export default {
   methods: {
     async getTransactions() {
       try {
-        let response = await AccountsService.authorizeUser(
-          this.$route.query.code
-        );
+        let response = await authorizeUser(this.$route.query.code);
         this.$router.push("Account");
       } catch (error) {
         this.error = error.message;
