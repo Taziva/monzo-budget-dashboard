@@ -1,7 +1,7 @@
 <template>
   <div class="account">
     <h1>Account</h1>
-    This file will list all the transactions.
+    <p>Your Account Information</p>
     <p v-if="typeof error != 'undefined'">{{error}}<br />
     </p>
     <div class="balance-container">
@@ -19,21 +19,30 @@
           <h4>Total Budget</h4>
           <p>{{formatAmount(totalBudget, "GBP")}}</p>
         </div>
+        <div class="balance__budget-percentage">
+          <h4>Remaining Percentage</h4>
+          <p>{{(remainingBudget / totalBudget * 100).toFixed(2)}}%</p>
+        </div>
       </div>
     </div>
 
     <button v-on:click="sendMessage">Send Balance</button>
+
     <div v-if="hasTransactions()">
       <h3>Transactions</h3>
-      <div class="transactions__month" v-for="(value, propertyName) in transactions">
-        <h4>{{propertyName}}</h4>
-        <div class="transactions" v-for="transaction in value">
-          <p>
-            <span>{{ formatCategory(transaction.category) }}</span> -
-            <span>{{ transaction.description }}</span> - <span><b>{{ formatAmount(transaction.amount/100, transaction.currency) }}</b></span>
-          </p>
-        </div>
-      </div>
+      <tabs class="transactions__month">
+        <tab v-for="(value, propertyName) in transactions" :name="propertyName" :key="propertyName">
+          <h4>{{propertyName}}</h4>
+          <div class="transaction" v-for="transaction in value">
+            <div class="transaction__info">
+              <p>
+                <span class="transaction__info-category">{{ formatCategory(transaction.category) }}</span> -
+                <span class="transaction__info-description">{{ transaction.description }}</span> <span class="transaction__info-amount"><b>{{ formatAmount(transaction.amount/100, transaction.currency) }}</b></span>
+              </p>
+            </div>
+          </div>
+        </tab>
+      </tabs>
     </div>
     <div v-if="!hasTransactions()">
       <a :href="monzoClient" >
@@ -137,5 +146,112 @@ export default {
 }
 .budget :not(:last-child) {
   margin-right: 10px;
+}
+.tabs-component {
+  margin: 0 auto;
+  width: 70%;
+}
+
+.tabs-component-tabs {
+  border: solid 1px #ddd;
+  border-radius: 6px;
+  list-style: none;
+  margin-bottom: 5px;
+  -webkit-padding-start: 0;
+}
+
+@media (min-width: 700px) {
+  .tabs-component-tabs {
+    border: 0;
+    align-items: stretch;
+    display: flex;
+    justify-content: flex-start;
+    margin-bottom: -1px;
+  }
+}
+
+.tabs-component-tab {
+  color: #999;
+  font-size: 14px;
+  font-weight: 600;
+  margin-right: 0px !important;
+}
+
+.tabs-component-tab:not(:last-child) {
+  border-bottom: dotted 1px #ddd;
+}
+
+.tabs-component-tab:hover {
+  color: #666;
+}
+
+.tabs-component-tab.is-active {
+  color: #000;
+}
+
+@media (min-width: 700px) {
+  .tabs-component-tab {
+    background-color: #fff;
+    border: solid 1px #ddd;
+    border-radius: 3px 3px 0 0;
+    margin-right: 0.5em;
+  }
+
+  .tabs-component-tab.is-active {
+    border-bottom: solid 1px #fff;
+    text-decoration: underline;
+    z-index: 2;
+    transform: translateY(0);
+  }
+}
+
+.tabs-component-tab-a {
+  align-items: center;
+  color: inherit;
+  display: flex;
+  padding: 0.75em 1em;
+  text-decoration: none;
+}
+
+.tabs-component-panels {
+  padding: 4em 0;
+}
+
+.transaction {
+  border: 1px solid #eee;
+}
+
+.transaction__info {
+  width: 101%;
+  background: #fff;
+  margin-left: -0.5%;
+}
+
+.transaction__info-amount {
+  display: block;
+}
+
+@media (max-width: 400px) {
+  .transaction__info p {
+    padding: 5%;
+  }
+  .budget {
+    flex-direction: column;
+  }
+}
+
+.transaction:not(:last-child) {
+  margin-bottom: 5px;
+}
+
+@media (min-width: 700px) {
+  .tabs-component-panels {
+    border-top-left-radius: 0;
+    background-color: #fff;
+    border: solid 1px #ddd;
+    border-radius: 0 6px 6px 6px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
+    padding: 2em 2em;
+  }
 }
 </style>

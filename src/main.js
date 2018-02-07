@@ -4,6 +4,7 @@ import Vue from "vue";
 import App from "./App";
 import router from "./router";
 import firebase from "firebase";
+import { Tabs, Tab } from "vue-tabs-component";
 
 let app;
 const config = {
@@ -17,6 +18,8 @@ const config = {
 firebase.initializeApp(config);
 
 Vue.config.productionTip = false;
+Vue.component("tabs", Tabs);
+Vue.component("tab", Tab);
 firebase.auth().onAuthStateChanged(user => {
   if (!app) {
     /* eslint-disable no-new */
