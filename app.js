@@ -1,9 +1,4 @@
-// const axios = require("axios");
-// const request = require("request-promise")
-// const express = require("express");
-// const bodyParser = require("body-parser");
-// const morgan = require("morgan");
-// const admin = require("firebase-admin");
+
 import express from "express";
 import bodyParser from "body-parser";
 import morgan from "morgan";
@@ -129,7 +124,7 @@ app.get("/api/balance", async (req, res) => {
       qs: { account_id: accountId },
       json: true
     });
-    res.send(balance);
+    res.json(balance);
   } catch (error) {
     res.status(422).send(error.message);
   }
@@ -170,7 +165,7 @@ app.get("/api/authorize", async (req, res) => {
 
     data.accountId = account.accounts[1].id;
     await saveAccountInfo(data, uid);
-    res.send("Ok");
+    res.sendStatus(200);
   } catch (error) {
     res.status(422).send(error.message);
   }
@@ -188,7 +183,7 @@ app.post("/api/budget/new", async (req, res) => {
       });
 
     await saveTotalBudgetInfo(totalBudget, uid);
-    res.send("Ok");
+    res.sendStatus(200);
   } catch (error) {
     res.status(422).send(error.message);
   }
@@ -204,9 +199,95 @@ app.get("/api/budget", async (req, res) => {
         return decodedToken.uid;
       });
     const totalBudget = await getBudgetInfo(uid);
-    res.send(totalBudget);
+    res.json(totalBudget);
+  } catch (error) {
+    res.sendStatus(422);
+  }
+});
+
+app.post("/api/webhooks/new", async (req, res) => {
+  try {
+    let auth = req.get("authorization");
+    let uid = await admin
+      .auth()
+      .verifyIdToken(auth)
+      .then(decodedToken => {
+        return decodedToken.uid;
+      });
+    const { accessToken, accountId } = await getAccountInfo(uid);
+
+    const formData = {
+      account_id: accountId,
+      url: `https://izzy-monzo.herokuapp.com/api/webhooks/${uid}`
+    };
+    let data = await request.post({
+      url: "https://api.monzo.com/webhooks",
+      headers: {
+        Authorization: `Bearer ${accessToken}`
+      },
+      qs: { account_id: accountId },
+      form: formData,
+      json: true
+    });
+    res.sendStatus(200);
   } catch (error) {
     res.status(422).send(error.message);
+  }
+});
+
+app.get("/api/webhooks", async (req, res) => {
+  try {
+    let auth = req.get("authorization");
+    let uid = await admin
+      .auth()
+      .verifyIdToken(auth)
+      .then(decodedToken => {
+        return decodedToken.uid;
+      });
+      const { accessToken, accountId } = await getAccountInfo(uid);
+
+      let webhooks = await request.get({
+        uri: "https://api.monzo.com/webhooks",
+        headers: {
+          Authorization: `Bearer ${accessToken}`
+        },
+        qs: { account_id: accountId },
+        json: true
+      });
+      console.log(webhooks);
+      return webhooks
+  } catch (error) {
+    res.sendStatus(422);
+  }
+});
+
+app.post("/api/webhooks/:uid", async (req, res) => {
+  try {
+    let uid = req.params.uid;
+    const { accessToken, accountId } = await getAccountInfo(uid);
+    const formData = {
+      type: "basic",
+      params: {
+        title: "Budget Alert",
+        image_url: "http://www.nyan.cat/cats/original.gif",
+        background_color: "#FCF1EE",
+        body_color: "#FCF1EE",
+        title_color: "#333",
+        body: `This won't get annoying at all`
+      }
+    };
+    let data = await request.post({
+      url: "https://api.monzo.com/feed",
+      headers: {
+        Authorization: `Bearer ${accessToken}`
+      },
+      qs: { account_id: accountId },
+      form: formData,
+      json: true
+    });
+    res.sendStatus(200)
+  } catch (error) {
+    res.sendStatus(422);
   }
 });
 
@@ -215,8 +296,9 @@ app.get("*", function(req, res) {
 });
 
 app.listen(port, () => {
-  if (process.env.NODE_ENV !== "production") {
-    console.log(`Listening on port http://localhost:${port}`);
+  if (process.env.NODE_ENV === "production") {
+    console.log(`Listening on port: ${port}`);
   }
-  console.log(`Listening on port: ${port}`);
+  console.log(`Listening on port http://localhost:${port}`);
+
 });

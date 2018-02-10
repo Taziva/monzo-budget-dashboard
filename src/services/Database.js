@@ -6,10 +6,9 @@ export const saveAccountInfo = async (data, uid) => {
   await firebase
     .database()
     .ref(`/users/${uid}/monzoAccount`)
-    .set({
+    .update({
       accountId: data.accountId,
-      accessToken: encryptedAccessToken,
-      totalBudget: 0
+      accessToken: encryptedAccessToken
     });
 };
 export const getAccountInfo = async uid => {

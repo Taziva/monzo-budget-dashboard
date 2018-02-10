@@ -33,6 +33,7 @@
       <tabs class="transactions__month">
         <tab v-for="(value, propertyName) in transactions" :name="propertyName" :key="propertyName">
           <h4>{{propertyName}}</h4>
+          <h5>Total: {{ formatAmount(calculateMonthTotal(propertyName), balance.currency)}}</h5>
           <div class="transaction" v-for="transaction in value">
             <div class="transaction__info">
               <p>
@@ -57,12 +58,18 @@
         <input type="text" name="budget" v-model="totalBudget" placeholder="Budget"><br/>
         <button v-on:click="saveBudget">Set Budget</button><br/>
       </div>
+      <div>
+        <p>Set Up Notifications</p>
+        <button v-on:click="setUpNotifications">Set Notification</button><br/>
+        <button v-on:click="getNotifications">Get Notification</button><br/>
+      </div>
     </div>
   </div>
 </template>
 
 <script>
 import TransactionsService from "@/services/TransactionsService";
+import MessageService from "@/services/MessageService";
 import FeedService from "@/services/FeedService";
 import { formatAmount } from "@/services/CurrencyService";
 import { getUid } from "@/services/AccountsService";
@@ -87,11 +94,12 @@ export default {
     };
   },
   async beforeMount() {
-    await this.getTransactions();
-    await this.getBudget();
     await this.getBalance();
+    await this.getBudget();
+    await this.getTransactions();
     this.calculateRemainingBudget();
   },
+
   methods: {
     async getTransactions() {
       const data = await TransactionsService.fetchTransactions();
@@ -123,17 +131,27 @@ export default {
     async getBalance() {
       this.balance = await fetchBalance();
     },
-    calculateRemainingBudget() {
-      const thisMonth = DateService.monthNumToName(new Date().getMonth());
-      const spentThisMonth =
-        this.transactions[thisMonth]
+    async setUpNotifications() {
+      await MessageService.setUpNotifications();
+    },
+    async getNotifications() {
+      await MessageService.getNotifications();
+    },
+    calculateMonthTotal(month) {
+      return (
+        this.transactions[month]
           .map(transaction => {
             return transaction.amount;
           })
           .reduce((a, b) => {
             return a + b;
-          }) / 100;
-      this.remainingBudget = this.totalBudget + spentThisMonth;
+          }) / 100
+      );
+    },
+    calculateRemainingBudget() {
+      const thisMonth = DateService.monthNumToName(new Date().getMonth());
+      const spentThisMonth = this.calculateMonthTotal(thisMonth);
+      this.remainingBudget = parseInt(this.totalBudget) + spentThisMonth;
     }
   }
 };
