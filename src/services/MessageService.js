@@ -26,6 +26,17 @@ export default {
         });
       });
   },
+  async getNotificationsStatus() {
+    let { data } = await firebase
+      .auth()
+      .currentUser.getIdToken(true)
+      .then(idToken => {
+        return Api().get("/notifications", {
+          headers: { Authorization: `${idToken}` }
+        });
+      });
+    return data;
+  },
   async stopNotifications() {
     await firebase
       .auth()

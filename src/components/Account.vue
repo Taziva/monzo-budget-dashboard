@@ -60,9 +60,9 @@
       </div>
       <div>
         <p>Notification Settings</p>
-        <button v-on:click="setUpNotifications">Start Notifications</button>
-        <button v-on:click="getNotifications">Get Notifications</button>
-        <button v-on:click="stopNotifications">Stop Notifications</button><br/>
+        <button v-if="!notificationsStatus" v-on:click="setUpNotifications">Start Notifications</button>
+        <button v-if="notificationsStatus" v-on:click="stopNotifications">Stop Notifications</button>
+        <button v-on:click="getNotifications">Get Notifications</button><br/>
       </div>
     </div>
   </div>
@@ -93,6 +93,7 @@ export default {
       totalBudget: 0,
       transactions: [],
       transactionsLoaded: false,
+      notificationsStatus: false,
       error: "",
       monzoClient: `https://auth.monzo.com/?client_id=${
         process.env.MONZO_CLIENT
@@ -103,6 +104,7 @@ export default {
     await this.getBalance();
     await this.getBudget();
     await this.getTransactions();
+    await this.getNotificationsStatus();
     this.calculateRemainingBudget();
   },
 
@@ -139,12 +141,18 @@ export default {
     },
     async setUpNotifications() {
       await MessageService.setUpNotifications();
+      this.getNotificationsStatus();
     },
     async getNotifications() {
       await MessageService.getNotifications();
     },
     async stopNotifications() {
       await MessageService.stopNotifications();
+      this.getNotificationsStatus();
+    },
+    async getNotificationsStatus() {
+      this.notificationsStatus = await MessageService.getNotificationsStatus();
+      console.log(this.notificationsStatus);
     },
     calculateMonthTotal(month) {
       return (
@@ -157,6 +165,7 @@ export default {
           }) / 100
       );
     },
+
     async calculateRemainingBudget() {
       const thisMonth = DateService.monthNumToName(new Date().getMonth());
       const spentThisMonth = this.calculateMonthTotal(thisMonth);
