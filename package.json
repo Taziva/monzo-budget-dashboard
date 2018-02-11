@@ -1,11 +1,12 @@
 {
-  "name": "client",
+  "name": "monzo-budget-dashboard",
   "version": "1.0.0",
   "description": "Monzo App Client",
   "author": "Taziva <stmarovatsanga@gmail.com>",
   "private": true,
   "scripts": {
-    "client": "webpack-dev-server --inline --progress --config build/webpack.dev.conf.js",
+    "client":
+      "webpack-dev-server --inline --progress --config build/webpack.dev.conf.js",
     "start": "babel-node app.js --presets es2015,stage-2",
     "unit": "jest --config test/unit/jest.conf.js --coverage",
     "e2e": "node test/e2e/runner.js",
@@ -96,9 +97,5 @@
     "node": ">= 6.0.0",
     "npm": ">= 3.0.0"
   },
-  "browserslist": [
-    "> 1%",
-    "last 2 versions",
-    "not ie <= 8"
-  ]
+  "browserslist": ["> 1%", "last 2 versions", "not ie <= 8"]
 }

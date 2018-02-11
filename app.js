@@ -296,7 +296,6 @@ app.get("/api/webhooks", async (req, res) => {
     const userWebhooks = webhooks.filter(webhook => {
       webhook.url.endsWith(uid);
     });
-    console.log(userWebhooks);
     return userWebhooks;
   } catch (error) {
     res.sendStatus(422);

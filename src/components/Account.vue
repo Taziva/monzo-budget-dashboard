@@ -152,7 +152,6 @@ export default {
     },
     async getNotificationsStatus() {
       this.notificationsStatus = await MessageService.getNotificationsStatus();
-      console.log(this.notificationsStatus);
     },
     calculateMonthTotal(month) {
       return (
