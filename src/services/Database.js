@@ -74,3 +74,23 @@ export const getAllBudgetInfo = async uid => {
   };
   return budgetInfo;
 };
+
+export const setNotificationsStatus = async (notificationsStatus, uid) => {
+  await firebase
+    .database()
+    .ref(`/users/${uid}/monzoAccount`)
+    .update({
+      notificationsStatus
+    });
+};
+
+export const getNotificationsStatus = async uid => {
+  let notificationsStatus = await firebase
+    .database()
+    .ref(`/users/${uid}/monzoAccount`)
+    .once("value")
+    .then(snapshot => {
+      return snapshot.val().notificationsStatus;
+    });
+  return notificationsStatus;
+};
