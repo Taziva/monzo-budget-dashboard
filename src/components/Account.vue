@@ -4,20 +4,20 @@
     <p>Your Account Information</p>
     <p v-if="typeof error != 'undefined'">{{error}}<br />
     </p>
-    <div class="balance-container">
+    <div v-if="balance != null" class="balance-container">
       <h3>Balance</h3>
-      <div v-if="balance != null" class="balance__current">
+      <div class="balance__current">
         <h4>Current Balance</h4>
         <p>{{formatAmount(balance.balance/100, balance.currency)}}</p>
       </div>
       <div class="budget">
         <div class="balance__remaining-budget">
           <h4>Remaining Budget</h4>
-          <p>{{formatAmount(remainingBudget, "GBP")}}</p>
+          <p>{{formatAmount(remainingBudget, balance.currency)}}</p>
         </div>
         <div class="balance__total-budget">
           <h4>Total Budget</h4>
-          <p>{{formatAmount(totalBudget, "GBP")}}</p>
+          <p>{{formatAmount(totalBudget, balance.currency)}}</p>
         </div>
         <div class="balance__budget-percentage">
           <h4>Remaining Percentage</h4>
@@ -53,15 +53,16 @@
     <div class="account-settings">
       <h3>Settings</h3>
       <div>
-        <p>Total Budget</p>
+        <p>Budget Settings</p>
         <label for="budget">£</label>
         <input type="text" name="budget" v-model="totalBudget" placeholder="Budget"><br/>
         <button v-on:click="saveBudget">Set Budget</button><br/>
       </div>
       <div>
-        <p>Set Up Notifications</p>
-        <button v-on:click="setUpNotifications">Set Notification</button><br/>
-        <button v-on:click="getNotifications">Get Notification</button><br/>
+        <p>Notification Settings</p>
+        <button v-on:click="setUpNotifications">Start Notifications</button>
+        <button v-on:click="getNotifications">Get Notifications</button>
+        <button v-on:click="stopNotifications">Stop Notifications</button><br/>
       </div>
     </div>
   </div>
@@ -73,7 +74,12 @@ import MessageService from "@/services/MessageService";
 import FeedService from "@/services/FeedService";
 import { formatAmount } from "@/services/CurrencyService";
 import { getUid } from "@/services/AccountsService";
-import { setBudget, fetchBudget } from "@/services/BudgetService";
+import {
+  setBudget,
+  fetchBudget,
+  saveRemainingBudget,
+  fetchRemainingBudget
+} from "@/services/BudgetService";
 import { fetchBalance } from "@/services/BalanceService";
 import DateService from "@/services/DateService";
 
@@ -137,6 +143,9 @@ export default {
     async getNotifications() {
       await MessageService.getNotifications();
     },
+    async stopNotifications() {
+      await MessageService.stopNotifications();
+    },
     calculateMonthTotal(month) {
       return (
         this.transactions[month]
@@ -148,10 +157,15 @@ export default {
           }) / 100
       );
     },
-    calculateRemainingBudget() {
+    async calculateRemainingBudget() {
       const thisMonth = DateService.monthNumToName(new Date().getMonth());
       const spentThisMonth = this.calculateMonthTotal(thisMonth);
-      this.remainingBudget = parseInt(this.totalBudget) + spentThisMonth;
+      const remainingBudget = parseInt(this.totalBudget) + spentThisMonth;
+      const persistentRemainingBudget = await fetchRemainingBudget();
+      if (persistentRemainingBudget !== remainingBudget) {
+        saveRemainingBudget(remainingBudget);
+      }
+      this.remainingBudget = remainingBudget;
     }
   }
 };

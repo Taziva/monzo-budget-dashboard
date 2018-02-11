@@ -32,14 +32,6 @@ export const saveTotalBudgetInfo = async (totalBudget, uid) => {
       totalBudget
     });
 };
-export const saveRemainingBudgetInfo = async (remainingBudget, uid) => {
-  await firebase
-    .database()
-    .ref(`/users/${uid}/monzoAccount`)
-    .update({
-      remainingBudget
-    });
-};
 export const getBudgetInfo = async uid => {
   let totalBudget = await firebase
     .database()
@@ -49,4 +41,36 @@ export const getBudgetInfo = async uid => {
       return snapshot.val().totalBudget;
     });
   return totalBudget;
+};
+export const saveRemainingBudgetInfo = async (remainingBudget, uid) => {
+  await firebase
+    .database()
+    .ref(`/users/${uid}/monzoAccount`)
+    .update({
+      remainingBudget
+    });
+};
+export const getRemainingBudgetInfo = async uid => {
+  let remainingBudget = await firebase
+    .database()
+    .ref(`/users/${uid}/monzoAccount`)
+    .once("value")
+    .then(snapshot => {
+      return snapshot.val().remainingBudget;
+    });
+  return remainingBudget;
+};
+export const getAllBudgetInfo = async uid => {
+  let info = await firebase
+    .database()
+    .ref(`/users/${uid}/monzoAccount`)
+    .once("value")
+    .then(snapshot => {
+      return snapshot.val();
+    });
+  const budgetInfo = {
+    totalBudget: info.totalBudget,
+    remainingBudget: info.remainingBudget
+  };
+  return budgetInfo;
 };

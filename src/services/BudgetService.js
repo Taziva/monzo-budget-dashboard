@@ -29,3 +29,32 @@ export const fetchBudget = async () => {
     });
   return data;
 };
+
+export const saveRemainingBudget = async remainingBudget => {
+  await firebase
+    .auth()
+    .currentUser.getIdToken(true)
+    .then(idToken => {
+      return Api().post(
+        "/remaining-budget/new",
+        {
+          remainingBudget
+        },
+        {
+          headers: { Authorization: `${idToken}` }
+        }
+      );
+    });
+};
+
+export const fetchRemainingBudget = async remainingBudget => {
+  let { data } = await firebase
+    .auth()
+    .currentUser.getIdToken(true)
+    .then(idToken => {
+      return Api().get("/remaining-budget", {
+        headers: { Authorization: `${idToken}` }
+      });
+    });
+  return data;
+};

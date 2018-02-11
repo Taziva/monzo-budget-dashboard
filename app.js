@@ -9,7 +9,10 @@ import {
   getAccountInfo,
   saveAccountInfo,
   saveTotalBudgetInfo,
-  getBudgetInfo
+  getBudgetInfo,
+  saveRemainingBudgetInfo,
+  getRemainingBudgetInfo,
+  getAllBudgetInfo
 } from "./src/services/Database";
 import { formatAmount } from "./src/services/CurrencyService";
 require("dotenv").config();
@@ -205,6 +208,40 @@ app.get("/api/budget", async (req, res) => {
   }
 });
 
+app.get("/api/remaining-budget", async (req, res) => {
+  try {
+    let auth = req.get("authorization");
+    let uid = await admin
+      .auth()
+      .verifyIdToken(auth)
+      .then(decodedToken => {
+        return decodedToken.uid;
+      });
+    const remainingBudget = await getRemainingBudgetInfo(uid);
+    res.json(remainingBudget);
+  } catch (error) {
+    res.sendStatus(422);
+  }
+});
+
+app.post("/api/remaining-budget/new", async (req, res) => {
+  try {
+    const remainingBudget = req.body.remainingBudget;
+    let auth = req.get("authorization");
+    let uid = await admin
+      .auth()
+      .verifyIdToken(auth)
+      .then(decodedToken => {
+        return decodedToken.uid;
+      });
+
+    await saveRemainingBudgetInfo(remainingBudget, uid);
+    res.sendStatus(200);
+  } catch (error) {
+    res.status(422).send(error.message);
+  }
+});
+
 app.post("/api/webhooks/new", async (req, res) => {
   try {
     let auth = req.get("authorization");
@@ -246,7 +283,7 @@ app.get("/api/webhooks", async (req, res) => {
       });
       const { accessToken, accountId } = await getAccountInfo(uid);
 
-      let webhooks = await request.get({
+      let {webhooks} = await request.get({
         uri: "https://api.monzo.com/webhooks",
         headers: {
           Authorization: `Bearer ${accessToken}`
@@ -254,8 +291,10 @@ app.get("/api/webhooks", async (req, res) => {
         qs: { account_id: accountId },
         json: true
       });
-      console.log(webhooks);
-      return webhooks
+      const userWebhooks = webhooks.filter((webhook)=>{
+        webhook.url.endsWith(uid)
+      })
+      return userWebhooks
   } catch (error) {
     res.sendStatus(422);
   }
@@ -265,6 +304,10 @@ app.post("/api/webhooks/:uid", async (req, res) => {
   try {
     let uid = req.params.uid;
     const { accessToken, accountId } = await getAccountInfo(uid);
+    const { remainingBudget, totalBudget } = await getAllBudgetInfo(uid);
+    const transaction = req.body.data;
+    const newBudget = remainingBudget + (transaction.amount/100)
+    const percentage = (newBudget / totalBudget * 100).toFixed(2)
     const formData = {
       type: "basic",
       params: {
@@ -273,7 +316,7 @@ app.post("/api/webhooks/:uid", async (req, res) => {
         background_color: "#FCF1EE",
         body_color: "#FCF1EE",
         title_color: "#333",
-        body: `This won't get annoying at all`
+        body: `Your remaining budget is now ${percentage}%`
       }
     };
     let data = await request.post({
@@ -286,6 +329,42 @@ app.post("/api/webhooks/:uid", async (req, res) => {
       json: true
     });
     res.sendStatus(200)
+  } catch (error) {
+    res.sendStatus(422);
+  }
+});
+
+app.delete("/api/webhooks", async (req, res) => {
+  try {
+    let auth = req.get("authorization");
+    let uid = await admin
+      .auth()
+      .verifyIdToken(auth)
+      .then(decodedToken => {
+        return decodedToken.uid;
+      });
+      const { accessToken, accountId } = await getAccountInfo(uid);
+      let {webhooks} = await request.get({
+        uri: "https://api.monzo.com/webhooks",
+        headers: {
+          Authorization: `Bearer ${accessToken}`
+        },
+        qs: { account_id: accountId },
+        json: true
+      });
+      const userWebhooks = webhooks.filter((webhook)=>{
+        webhook.url.endsWith(uid)
+      })
+      userWebhooks.forEach(async (userWebhook)=>{
+        await request.delete({
+          uri: `https://api.monzo.com/webhooks/${userWebhook.id}`,
+          headers: {
+            Authorization: `Bearer ${accessToken}`
+          },
+          json: true
+        });
+      })
+      res.sendStatus(200)
   } catch (error) {
     res.sendStatus(422);
   }

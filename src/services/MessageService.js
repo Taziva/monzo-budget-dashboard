@@ -25,5 +25,15 @@ export default {
           headers: { Authorization: `${idToken}` }
         });
       });
+  },
+  async stopNotifications() {
+    await firebase
+      .auth()
+      .currentUser.getIdToken(true)
+      .then(idToken => {
+        return Api().delete("/webhooks", {
+          headers: { Authorization: `${idToken}` }
+        });
+      });
   }
 };
