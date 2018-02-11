@@ -1,7 +1,8 @@
 <template>
   <div class="hello">
     <h1>{{ msg }}</h1>
-    <h2>Essential Links</h2>
+    <h2>An Idealisme Sombre Project</h2>
+    <p>Check Your Account Below:</p>
     <ul>
       <li>
         <a
@@ -24,7 +25,7 @@ export default {
   name: "home",
   data() {
     return {
-      msg: "Welcome to Your Vue.js App"
+      msg: "Welcome to the Monzo Budget Dashboard"
     };
   },
 
