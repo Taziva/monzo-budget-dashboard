@@ -8,7 +8,13 @@
         <router-link :to="{ name: 'Account', params: {} }">Account</router-link>
       </li>
     </ul>
+    <h1>Monzo Budget Dashboard</h1>
     <router-view/>
+    <footer class="footer">
+      <div class="footer__copyright">
+        &copy; Idealisme Sombre
+      </div>
+    </footer>
   </div>
 </template>
 
@@ -35,6 +41,18 @@ export default {
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
   color: #2c3e50;
-  margin-top: 60px;
+  margin-top: 30px;
+}
+.footer {
+  margin: 30px;
+  display: flex;
+  justify-content: center;
+}
+.footer__copyright {
+  flex: 0 0 70%;
+  font-size: 15px;
+}
+a:visited {
+  color: #42b983;
 }
 </style>

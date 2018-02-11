@@ -52,18 +52,24 @@
     </div>
     <div class="account-settings">
       <h3>Settings</h3>
-      <div>
-        <p>Budget Settings</p>
-        <label for="budget">£</label>
-        <input type="text" name="budget" v-model="totalBudget" placeholder="Budget"><br/>
-        <button v-on:click="saveBudget">Set Budget</button><br/>
-      </div>
-      <div>
-        <p>Notification Settings</p>
-        <button v-if="!notificationsStatus" v-on:click="setUpNotifications">Start Notifications</button>
-        <button v-if="notificationsStatus" v-on:click="stopNotifications">Stop Notifications</button>
-        <button v-on:click="getNotifications">Get Notifications</button><br/>
-      </div>
+      <tabs>
+        <tab name="Budget">
+          <div>
+            <p>Budget Settings</p>
+            <label for="budget">£</label>
+            <input type="text" name="budget" v-model="totalBudget" placeholder="Budget"><br/>
+            <button v-on:click="saveBudget">Set Budget</button><br/>
+          </div>
+        </tab>
+        <tab name="Notifications">
+          <div>
+            <p>Notification Settings</p>
+            <button v-if="!notificationsStatus" v-on:click="setUpNotifications">Start Notifications</button>
+            <button v-if="notificationsStatus" v-on:click="stopNotifications">Stop Notifications</button>
+            <button v-on:click="getNotifications">Get Notifications</button><br/>
+          </div>
+        </tab>
+      </tabs>
     </div>
   </div>
 </template>
