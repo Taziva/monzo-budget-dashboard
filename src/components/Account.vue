@@ -45,8 +45,9 @@
         </tab>
       </tabs>
     </div>
-    <div v-if="!hasTransactions()">
-      <a :href="monzoClient" >
+    <div v-if="!hasTransactions()" class="auth">
+      <p class="auth__message">Authenticate Your Monzo Account Here:</p>
+      <a class="auth__link" :href="monzoClient" >
         Monzo
       </a>
     </div>
@@ -193,11 +194,14 @@ export default {
 .budget :not(:last-child) {
   margin-right: 10px;
 }
+.auth__link {
+  color: #42b983;
+  text-decoration: none;
+}
 .tabs-component {
   margin: 0 auto;
   width: 70%;
 }
-
 .tabs-component-tabs {
   border: solid 1px #ddd;
   border-radius: 6px;
@@ -232,7 +236,7 @@ export default {
 }
 
 .tabs-component-tab.is-active {
-  color: #000;
+  color: #42b983;
 }
 
 @media (min-width: 700px) {

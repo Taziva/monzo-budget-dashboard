@@ -52,7 +52,11 @@ export default {
   flex: 0 0 70%;
   font-size: 15px;
 }
-a:visited {
+#nav li a {
+  color: #42b983;
+  text-decoration: none;
+}
+#nav li a:visited {
   color: #42b983;
 }
 </style>
