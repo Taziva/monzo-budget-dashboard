@@ -33,7 +33,8 @@ export default {
         if (
           DateService.monthNumToName(
             new Date(transaction.created).getMonth()
-          ) === month
+          ) === month &&
+          transaction.amount <= 0
         ) {
           return transaction;
         }

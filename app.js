@@ -4,6 +4,9 @@ import morgan from "morgan";
 import admin from "firebase-admin";
 import request from "request-promise";
 import axios from "axios";
+
+import MonzoClient from "./src/clients/monzo";
+import { decodeUser } from "./src/services/DecodeUser";
 import {
   getAccountInfo,
   saveAccountInfo,
@@ -15,7 +18,6 @@ import {
   setNotificationsStatus,
   getNotificationsStatus
 } from "./src/services/Database";
-import { formatAmount } from "./src/services/CurrencyService";
 require("dotenv").config();
 
 const serviceAccount = {
@@ -46,89 +48,34 @@ app.use(express.static(`${__dirname}/dist`));
 app.get("/api/transactions", async (req, res) => {
   try {
     let auth = req.get("authorization");
-    let uid = await admin
-      .auth()
-      .verifyIdToken(auth)
-      .then(decodedToken => {
-        return decodedToken.uid;
-      });
+    let uid = await decodeUser(auth);
     const { accessToken, accountId } = await getAccountInfo(uid);
-    let { data } = await axios.get("https://api.monzo.com/transactions", {
-      headers: {
-        Authorization: `Bearer ${accessToken}`
-      },
-      params: {
-        account_id: accountId
-      }
-    });
+    const data = await MonzoClient.getTransactions(accessToken, accountId);
     res.send(data.transactions);
   } catch (error) {
     res.send({ error: error.response.data });
   }
 });
 
-app.post("/api/feed/new", async (req, res) => {
+app.get("/api/balance", async (req, res) => {
   try {
     let auth = req.get("authorization");
-    let uid = await admin
-      .auth()
-      .verifyIdToken(auth)
-      .then(decodedToken => {
-        return decodedToken.uid;
-      });
+    let uid = await decodeUser(auth);
     const { accessToken, accountId } = await getAccountInfo(uid);
-    const { balance, currency } = await request.get({
-      url: "https://api.monzo.com/balance",
-      headers: {
-        Authorization: `Bearer ${accessToken}`
-      },
-      qs: { account_id: accountId },
-      json: true
-    });
-    const formData = {
-      type: "basic",
-      params: {
-        title: "Budget Alert",
-        image_url: "http://www.nyan.cat/cats/original.gif",
-        background_color: "#FCF1EE",
-        body_color: "#FCF1EE",
-        title_color: "#333",
-        body: `${req.body.message} ${formatAmount(balance, currency)}`
-      }
-    };
-    let data = await request.post({
-      url: "https://api.monzo.com/feed",
-      headers: {
-        Authorization: `Bearer ${accessToken}`
-      },
-      qs: { account_id: accountId },
-      form: formData,
-      json: true
-    });
-    res.send("OK");
+    const balance = await MonzoClient.getBalance(accessToken, accountId);
+    res.json(balance);
   } catch (error) {
     res.status(422).send(error.message);
   }
 });
-app.get("/api/balance", async (req, res) => {
+
+app.post("/api/feed/new", async (req, res) => {
   try {
     let auth = req.get("authorization");
-    let uid = await admin
-      .auth()
-      .verifyIdToken(auth)
-      .then(decodedToken => {
-        return decodedToken.uid;
-      });
+    let uid = await decodeUser(auth);
     const { accessToken, accountId } = await getAccountInfo(uid);
-    const balance = await request.get({
-      url: "https://api.monzo.com/balance",
-      headers: {
-        Authorization: `Bearer ${accessToken}`
-      },
-      qs: { account_id: accountId },
-      json: true
-    });
-    res.json(balance);
+    await MonzoClient.sendBalance(accessToken, accountId, req.body.message);
+    res.sendStatus(200);
   } catch (error) {
     res.status(422).send(error.message);
   }
@@ -137,38 +84,9 @@ app.get("/api/balance", async (req, res) => {
 app.get("/api/authorize", async (req, res) => {
   try {
     let auth = req.get("authorization");
-    let uid = await admin
-      .auth()
-      .verifyIdToken(auth)
-      .then(decodedToken => {
-        return decodedToken.uid;
-      });
-    const formData = {
-      grant_type: "authorization_code",
-      client_id: process.env.MONZO_CLIENT_ID,
-      client_secret: process.env.MONZO_CLIENT_SECRET,
-      redirect_uri: "http://localhost:8080/authorize",
-      code: req.query.code
-    };
-
-    let data = await request.post({
-      url: "https://api.monzo.com/oauth2/token",
-      form: formData,
-      json: true
-    });
-    let account = await request.get({
-      uri: "https://api.monzo.com/accounts",
-      headers: {
-        Authorization: `Bearer ${data.access_token}`
-      },
-      body: {
-        account_type: "uk_retail"
-      },
-      json: true
-    });
-
-    data.accountId = account.accounts[1].id;
-    await saveAccountInfo(data, uid);
+    let uid = await decodeUser(auth);
+    let account = await MonzoClient.authorize(req.query.code);
+    await saveAccountInfo(account, uid);
     res.sendStatus(200);
   } catch (error) {
     res.status(422).send(error.message);
@@ -179,12 +97,7 @@ app.post("/api/budget/new", async (req, res) => {
   try {
     const totalBudget = req.body.totalBudget;
     let auth = req.get("authorization");
-    let uid = await admin
-      .auth()
-      .verifyIdToken(auth)
-      .then(decodedToken => {
-        return decodedToken.uid;
-      });
+    let uid = await decodeUser(auth);
 
     await saveTotalBudgetInfo(totalBudget, uid);
     res.sendStatus(200);
@@ -196,12 +109,7 @@ app.post("/api/budget/new", async (req, res) => {
 app.get("/api/budget", async (req, res) => {
   try {
     let auth = req.get("authorization");
-    let uid = await admin
-      .auth()
-      .verifyIdToken(auth)
-      .then(decodedToken => {
-        return decodedToken.uid;
-      });
+    let uid = await decodeUser(auth);
     const totalBudget = await getBudgetInfo(uid);
     res.json(totalBudget);
   } catch (error) {
@@ -212,12 +120,7 @@ app.get("/api/budget", async (req, res) => {
 app.get("/api/remaining-budget", async (req, res) => {
   try {
     let auth = req.get("authorization");
-    let uid = await admin
-      .auth()
-      .verifyIdToken(auth)
-      .then(decodedToken => {
-        return decodedToken.uid;
-      });
+    let uid = await decodeUser(auth);
     const remainingBudget = await getRemainingBudgetInfo(uid);
     res.json(remainingBudget);
   } catch (error) {
@@ -229,13 +132,7 @@ app.post("/api/remaining-budget/new", async (req, res) => {
   try {
     const remainingBudget = req.body.remainingBudget;
     let auth = req.get("authorization");
-    let uid = await admin
-      .auth()
-      .verifyIdToken(auth)
-      .then(decodedToken => {
-        return decodedToken.uid;
-      });
-
+    let uid = await decodeUser(auth);
     await saveRemainingBudgetInfo(remainingBudget, uid);
     res.sendStatus(200);
   } catch (error) {
@@ -246,28 +143,10 @@ app.post("/api/remaining-budget/new", async (req, res) => {
 app.post("/api/webhooks/new", async (req, res) => {
   try {
     let auth = req.get("authorization");
-    let uid = await admin
-      .auth()
-      .verifyIdToken(auth)
-      .then(decodedToken => {
-        return decodedToken.uid;
-      });
+    let uid = await decodeUser(auth);
     const { accessToken, accountId } = await getAccountInfo(uid);
-
-    const formData = {
-      account_id: accountId,
-      url: `https://izzy-monzo.herokuapp.com/api/webhooks/${uid}`
-    };
-    let data = await request.post({
-      url: "https://api.monzo.com/webhooks",
-      headers: {
-        Authorization: `Bearer ${accessToken}`
-      },
-      qs: { account_id: accountId },
-      form: formData,
-      json: true
-    });
-    setNotificationsStatus(true, uid)
+    await MonzoClient.setUpNotifications(accessToken, accountId, uid);
+    setNotificationsStatus(true, uid);
     res.sendStatus(200);
   } catch (error) {
     res.status(422).send(error.message);
@@ -277,22 +156,12 @@ app.post("/api/webhooks/new", async (req, res) => {
 app.get("/api/webhooks", async (req, res) => {
   try {
     let auth = req.get("authorization");
-    let uid = await admin
-      .auth()
-      .verifyIdToken(auth)
-      .then(decodedToken => {
-        return decodedToken.uid;
-      });
+    let uid = await decodeUser(auth);
     const { accessToken, accountId } = await getAccountInfo(uid);
-
-    let { webhooks } = await request.get({
-      uri: "https://api.monzo.com/webhooks",
-      headers: {
-        Authorization: `Bearer ${accessToken}`
-      },
-      qs: { account_id: accountId },
-      json: true
-    });
+    let { webhooks } = await MonzoClient.getNotifications(
+      accessToken,
+      accountId
+    );
     const userWebhooks = webhooks.filter(webhook => {
       webhook.url.endsWith(uid);
     });
@@ -311,26 +180,7 @@ app.post("/api/webhooks/:uid", async (req, res) => {
     const newBudget = remainingBudget + transaction.amount / 100;
     const percentage = (newBudget / totalBudget * 100).toFixed(2);
     saveRemainingBudgetInfo(newBudget, uid);
-    const formData = {
-      type: "basic",
-      params: {
-        title: "Budget Alert",
-        image_url: "http://www.nyan.cat/cats/original.gif",
-        background_color: "#FCF1EE",
-        body_color: "#FCF1EE",
-        title_color: "#333",
-        body: `Your remaining budget is now ${percentage}%`
-      }
-    };
-    let data = await request.post({
-      url: "https://api.monzo.com/feed",
-      headers: {
-        Authorization: `Bearer ${accessToken}`
-      },
-      qs: { account_id: accountId },
-      form: formData,
-      json: true
-    });
+    await MonzoClient.sendPercentage(accessToken, accountId, percentage);
     res.sendStatus(200);
   } catch (error) {
     res.sendStatus(422);
@@ -340,34 +190,10 @@ app.post("/api/webhooks/:uid", async (req, res) => {
 app.delete("/api/webhooks", async (req, res) => {
   try {
     let auth = req.get("authorization");
-    let uid = await admin
-      .auth()
-      .verifyIdToken(auth)
-      .then(decodedToken => {
-        return decodedToken.uid;
-      });
+    let uid = await decodeUser(auth);
     const { accessToken, accountId } = await getAccountInfo(uid);
-    let { webhooks } = await request.get({
-      uri: "https://api.monzo.com/webhooks",
-      headers: {
-        Authorization: `Bearer ${accessToken}`
-      },
-      qs: { account_id: accountId },
-      json: true
-    });
-    const userWebhooks = webhooks.filter(webhook => {
-      webhook.url.endsWith(uid);
-    });
-    userWebhooks.forEach(async userWebhook => {
-      await request.delete({
-        uri: `https://api.monzo.com/webhooks/${userWebhook.id}`,
-        headers: {
-          Authorization: `Bearer ${accessToken}`
-        },
-        json: true
-      });
-    });
-    setNotificationsStatus(false, uid)
+    await MonzoClient.stopNotifications(accountId, accessToken, uid);
+    setNotificationsStatus(false, uid);
     res.sendStatus(200);
   } catch (error) {
     res.sendStatus(422);
@@ -377,14 +203,9 @@ app.delete("/api/webhooks", async (req, res) => {
 app.get("/api/notifications", async (req, res) => {
   try {
     let auth = req.get("authorization");
-    let uid = await admin
-      .auth()
-      .verifyIdToken(auth)
-      .then(decodedToken => {
-        return decodedToken.uid;
-      });
-    const notificationsStatus = await getNotificationsStatus(uid)
-    res.json(notificationsStatus)
+    let uid = await decodeUser(auth);
+    const notificationsStatus = await getNotificationsStatus(uid);
+    res.json(notificationsStatus);
   } catch (error) {
     res.sendStatus(422);
   }
@@ -398,5 +219,7 @@ app.listen(port, () => {
   if (process.env.NODE_ENV === "production") {
     console.log(`Listening on port: ${port}`);
   }
-  console.log(`Listening on port http://localhost:${port}`);
+  else {
+    console.log(`Listening on port http://localhost:${port}`);
+  }
 });
