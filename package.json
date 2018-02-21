@@ -11,7 +11,8 @@
     "unit": "jest --config test/unit/jest.conf.js --coverage",
     "e2e": "node test/e2e/runner.js",
     "test": "npm run unit && npm run e2e",
-    "server:dev": "nodemon app.js --exec babel-node --presets es2015,stage-2",
+    "server:dev":
+      "NODE_ENV=development nodemon app.js --exec babel-node --presets es2015,stage-2",
     "dev": "npm-run-all -p server:dev client",
     "lint": "eslint --ext .js,.vue src test/unit test/e2e/specs",
     "build": "node build/build.js",
